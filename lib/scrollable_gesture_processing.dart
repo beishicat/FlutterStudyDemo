@@ -32,6 +32,8 @@ class _ScrollableGestureProcessingWidgetState<T1 extends ScrollController,
   T2? _listScrollController;
   ScrollController? _activeScrollController;
   Drag? _drag;
+  final _physics = const ClampingScrollPhysics(); // 滚动效果（安卓的滚动效果）
+  final _gestures = <Type, GestureRecognizerFactory>{}; // 手势
 
   @override
   void initState() {
@@ -47,6 +49,8 @@ class _ScrollableGestureProcessingWidgetState<T1 extends ScrollController,
     } else if (T2 == ScrollController) {
       _listScrollController = ScrollController() as T2?;
     }
+
+    _setDragGestures();
   }
 
   @override
@@ -54,6 +58,42 @@ class _ScrollableGestureProcessingWidgetState<T1 extends ScrollController,
     _pageController?.dispose();
     _listScrollController?.dispose();
     super.dispose();
+  }
+
+  /// 设置手势
+  void _setDragGestures() {
+    // 参考 `scrollable.dart` 文件中 747 行
+    if (Axis.vertical == widget.scrollDirection) {
+      // 竖直方向的手势处理的回调
+      _gestures[VerticalDragGestureRecognizer] =
+          GestureRecognizerFactoryWithHandlers<VerticalDragGestureRecognizer>(
+              () => VerticalDragGestureRecognizer(),
+              (VerticalDragGestureRecognizer instance) {
+        instance
+          ..onStart = _handleDragStart
+          ..onUpdate = _handleDragUpdate
+          ..onEnd = _handleDragEnd
+          ..onCancel = _handleDragCancel
+          ..minFlingDistance = _physics.minFlingDistance
+          ..minFlingVelocity = _physics.minFlingVelocity
+          ..maxFlingVelocity = _physics.maxFlingVelocity;
+      });
+    } else {
+      // 水平方向的手势处理的回调
+      _gestures[HorizontalDragGestureRecognizer] =
+          GestureRecognizerFactoryWithHandlers<HorizontalDragGestureRecognizer>(
+              () => HorizontalDragGestureRecognizer(),
+              (HorizontalDragGestureRecognizer instance) {
+        instance
+          ..onStart = _handleDragStart
+          ..onUpdate = _handleDragUpdate
+          ..onEnd = _handleDragEnd
+          ..onCancel = _handleDragCancel
+          ..minFlingDistance = _physics.minFlingDistance
+          ..minFlingVelocity = _physics.minFlingVelocity
+          ..maxFlingVelocity = _physics.maxFlingVelocity;
+      });
+    }
   }
 
   void _handleDragStart(DragStartDetails details) {
@@ -128,37 +168,9 @@ class _ScrollableGestureProcessingWidgetState<T1 extends ScrollController,
 
   @override
   Widget build(BuildContext context) {
-    // 添加滑动手势处理
-    final gestures = <Type, GestureRecognizerFactory>{};
-    if (Axis.vertical == widget.scrollDirection) {
-      // 竖直方向的手势处理的回调
-      gestures[VerticalDragGestureRecognizer] =
-          GestureRecognizerFactoryWithHandlers<VerticalDragGestureRecognizer>(
-              () => VerticalDragGestureRecognizer(),
-              (VerticalDragGestureRecognizer instance) {
-        instance
-          ..onStart = _handleDragStart
-          ..onUpdate = _handleDragUpdate
-          ..onEnd = _handleDragEnd
-          ..onCancel = _handleDragCancel;
-      });
-    } else {
-      // 水平方向的手势处理的回调
-      gestures[HorizontalDragGestureRecognizer] =
-          GestureRecognizerFactoryWithHandlers<HorizontalDragGestureRecognizer>(
-              () => HorizontalDragGestureRecognizer(),
-              (HorizontalDragGestureRecognizer instance) {
-        instance
-          ..onStart = _handleDragStart
-          ..onUpdate = _handleDragUpdate
-          ..onEnd = _handleDragEnd
-          ..onCancel = _handleDragCancel;
-      });
-    }
-
     // 自定义手势
     return RawGestureDetector(
-      gestures: gestures,
+      gestures: _gestures,
       behavior: HitTestBehavior.opaque,
       child: widget.builder?.call(_pageController, _listScrollController,
           const NeverScrollableScrollPhysics()),
