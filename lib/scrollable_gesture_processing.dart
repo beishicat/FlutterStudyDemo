@@ -10,6 +10,8 @@ class ScrollableGestureProcessingWidget<T1 extends ScrollController,
     T2 extends ScrollController> extends StatefulWidget {
   /// 滑动方向
   final Axis scrollDirection;
+  final bool enablePullDown; // 是否可以下拉
+  final bool enablePullUp; // 是否可以上拉
 
   /// 构建子组件，T1是外层可滚动组件的控制器，T2是嵌套进去的可滚动组件的控制器
   final Widget Function(T1?, T2?, ScrollPhysics?)? builder;
@@ -17,6 +19,8 @@ class ScrollableGestureProcessingWidget<T1 extends ScrollController,
   const ScrollableGestureProcessingWidget({
     super.key,
     this.scrollDirection = Axis.vertical, // 默认垂直滑动
+    this.enablePullDown = true,
+    this.enablePullUp = true,
     this.builder,
   });
 
@@ -129,11 +133,13 @@ class _ScrollableGestureProcessingWidgetState<T1 extends ScrollController,
             details.primaryDelta! < 0 &&
                     // 到了底部，切换到 PageView
                     _activeScrollController?.position.pixels ==
-                        _activeScrollController?.position.maxScrollExtent ||
+                        _activeScrollController?.position.maxScrollExtent &&
+                    widget.enablePullUp ||
                 // 手指向下（向右）移动
                 details.primaryDelta! > 0 &&
                     // 到了顶部
-                    _activeScrollController?.position.pixels == 0)) {
+                    _activeScrollController?.position.pixels == 0 &&
+                    widget.enablePullDown)) {
       /// 切换相应的控制器
       _activeScrollController = _pageController;
       _drag?.cancel();

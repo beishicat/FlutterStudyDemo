@@ -55,6 +55,7 @@ class PullToTwoLevelWidget extends StatelessWidget {
       enableScrollWhenTwoLevel: true,
       child:
           ScrollableGestureProcessingWidget<ScrollController, ScrollController>(
+        enablePullUp: false,
         builder: (controller1, controller2, phsyics) {
           return SmartRefresher(
             controller: controller,
